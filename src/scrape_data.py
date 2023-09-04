@@ -14,6 +14,11 @@ Notes/confessions:
     - I downloaded the historical price data by automating pushing the "download" button
       on finance.yahoo.com. I'm sure there is an API I could have used, but since I was
       already working with selenium, I thought its quicker than learning the API syntax.
+
+To run this script, you will likely need to change the user_agent and firefox_driver
+variables. You will also need to change the ROOT variable to point to the root of the
+project directory.
+
 """
 # ##############################################################################
 # Set up workspace
@@ -61,6 +66,7 @@ firefox_options.set_preference('general.useragent.override', user_agent)
 
 browser = webdriver.Firefox(service=firefox_service, options=firefox_options)
 
+
 # ------------------------------------------------------------------------------
 # Scrape capitoltrades.com trade data
 # ------------------------------------------------------------------------------
@@ -70,6 +76,7 @@ def flatten_list(l):
 
 
 def extract_text(child):
+    """Extract text from Politician and Traded Issuer cells."""
     try:
         main_text = child.find('h3').text
         sub_text = child.find('span').text
@@ -80,11 +87,6 @@ def extract_text(child):
 
 def get_table_from_url(browser, extension, delay=5):
     browser.get(base_url + extension)
-    # sleep(delay) # Bit hacky but WebDriverWait doesn't work:
-    # WebDriverWait doesn't work because the page is "successfully loaded" before the
-    # content of the table is loaded. That is, the table body is loaded, but content
-    # isn't. If we wait for the table body, it will continue prematurely. I don't
-    # know how to wait for the content...
 
     try:
        element_present = EC.presence_of_element_located((By.TAG_NAME, 'table'))
@@ -128,7 +130,6 @@ df.to_csv(os.path.join(ROOT_DATA, 'CapitolTrades_raw.csv'), index=False)
 print(f'time to scrape {df.shape[0]} trades: {t_total}')
 print('\nFailed pages:')
 print(failed)
-# df = pd.read_csv(os.path.join(ROOT_DATA, 'CapitolTrades_raw.csv'))
 
 
 # ------------------------------------------------------------------------------
@@ -261,6 +262,7 @@ t_total = time() - t0
 print(f'time to download {tickers.shape[0]} company price datasets: {t_total}')
 print('\nFailed companies:')
 print(failed_data)
+
 
 # ------------------------------------------------------------------------------
 # Close browser
