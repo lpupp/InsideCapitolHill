@@ -1,23 +1,43 @@
 """Scrape data for InsideCapitolHill project for the Programming Practices
 for Research in Economics course.
 
+Author: Luca Gaegauf (lpupp) 09.2023
+
 This script scrapes the following data:
     - Trades made by US congress members from capitoltrades.com,
-    - Congress members' committee memberships from ballotpedia.org,
+    - Congress members' committee memberships from ballotpedia.org.
+
+Furthermore, using the yahoo finance API, it downloads the following data:
     - Firm-industry pairs for firms traded by congress members from finance.yahoo.com,
     - Historical price data for firms traded by congress members from finance.yahoo.com.
 
 Notes/confessions:
-    - This script was not optimized for speed. It was written to be run once.
+    - This script was not optimized for speed. It was written to be run once. However,
+      it could be that the webdriver disconnects while scraping ballotpedia.org, in which
+      case, the user would need to adjust the script accordingly as to not re-scrape data.
     - The ballotpedia.org scraping script is very hacky. The website is very unstructured
       and I had to parse it in order (as a list) to get the information.
-    - I downloaded the historical price data by automating pushing the "download" button
-      on finance.yahoo.com. I'm sure there is an API I could have used, but since I was
-      already working with selenium, I thought its quicker than learning the API syntax.
 
-To run this script, you will likely need to change the user_agent and firefox_driver
-variables. You will also need to change the ROOT variable to point to the root of the
-project directory.
+Run this script from the root directory of the project. To run this script, you will
+likely need to change the user_agent and firefox_driver variables. 
+
+Dependences:
+    - tqdm
+        - https://tqdm.github.io/
+        - pip install tqdm
+    - yfinance
+        - https://pypi.org/project/yfinance/
+        - pip install yfinance --upgrade --no-cache-dir
+    - pandas_datareader
+        - https://pandas-datareader.readthedocs.io/en/latest/
+        - pip install pandas-datareader
+    - selenium
+        - https://selenium-python.readthedocs.io/installation.html
+        - Installation can be cumbersome. I used the geckodriver for firefox. I do not have
+          more advice to give you. My the odds be ever in your favor. 
+    - bs4
+        - https://pypi.org/project/bs4/
+        - pip install bs4
 
 """
 # ##############################################################################
@@ -30,6 +50,9 @@ import yaml
 
 from time import time
 from tqdm import tqdm
+
+import yfinance as yf
+from pandas_datareader import data as pdr
 
 import pandas as pd
 
@@ -44,13 +67,20 @@ from selenium.webdriver.common.by import By
 
 from bs4 import BeautifulSoup
 
+yf.pdr_override()
 
 # ##############################################################################
 # Scrape data for capitoal hill insider trading long-short portfolio
 # ##############################################################################
 
-ROOT = '/home/lpupp/Documents/GitHub/InsideCapitolHill'
-ROOT_DATA = os.path.join(ROOT, 'data')
+ROOT = os.getcwd()
+PATH_DATA = os.path.join(ROOT, 'data')
+PATH_DATA_PRICES = os.path.join(PATH_DATA, 'yfinance_prices')
+
+try:
+    os.makedirs(PATH_DATA_PRICES)
+except OSError:
+    pass
 
 # Selenium set up
 user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:107.0) Gecko/20100101 Firefox/107.0'
@@ -70,7 +100,6 @@ browser = webdriver.Firefox(service=firefox_service, options=firefox_options)
 # ------------------------------------------------------------------------------
 # Scrape capitoltrades.com trade data
 # ------------------------------------------------------------------------------
-
 def flatten_list(l):
     return [item for row in l for item in row]
 
@@ -89,10 +118,10 @@ def get_table_from_url(browser, extension, delay=5):
     browser.get(base_url + extension)
 
     try:
-       element_present = EC.presence_of_element_located((By.TAG_NAME, 'table'))
-       WebDriverWait(browser, delay).until(element_present)
+        element_present = EC.presence_of_element_located((By.TAG_NAME, 'table'))
+        WebDriverWait(browser, delay).until(element_present)
     except TimeoutException:
-       print("Timed out waiting for page to load")
+        print("Timed out waiting for page to load")
 
     content = browser.page_source
     soup = BeautifulSoup(content)
@@ -125,7 +154,7 @@ for page_num in tqdm(range(n_pages)):
 
 t_total = time() - t0
 
-df.to_csv(os.path.join(ROOT_DATA, 'CapitolTrades_raw.csv'), index=False)
+df.to_csv(os.path.join(PATH_DATA, 'CapitolTrades_raw.csv'), index=False)
 
 print(f'time to scrape {df.shape[0]} trades: {t_total}')
 print('\nFailed pages:')
@@ -144,7 +173,7 @@ committee_membership = {}
 failed = []
 
 t0 = time()
-for politician in tqdm(df.politician.unique()):
+for i, politician in enumerate(tqdm(df.politician.unique())):
     # This section is a bit shitty. Ballotpedia.org is very unstructured so I need to parse
     # it in order (as a list) to get the information.
     # HTML structure:
@@ -158,52 +187,55 @@ for politician in tqdm(df.politician.unique()):
     person_committee_membership = {}
 
     browser.get(base_url + politician.replace(' ', '_'))
-    for line in browser.find_element(By.CLASS_NAME, 'mw-parser-output').text.splitlines():
-        # Skip lines until we find "Committee assignments" header
-        if line == 'Committee assignments':
-            skip_line = False
-        
-        if skip_line:
-            continue
+    try:
+        for line in browser.find_element(By.CLASS_NAME, 'mw-parser-output').text.splitlines():
+            # Skip lines until we find "Committee assignments" header
+            if line == 'Committee assignments':
+                skip_line = False
+            
+            if skip_line:
+                continue
 
-        # Once we passed "Committee assignments" header we check headers for dates or date ranges.
-        # Every time there is a new date header, we store the previously collected information to a dict.
-        # We only have trading data for 2020, so we can omit earlier years.
-        dates_in_line = re.match(r'.*(202[0-4])', line)
-        if dates_in_line is not None:
-            check_next_line = True
+            # Once we passed "Committee assignments" header we check headers for dates or date ranges.
+            # Every time there is a new date header, we store the previously collected information to a dict.
+            # We only have trading data for 2020, so we can omit earlier years.
+            dates_in_line = re.match(r'.*(202[0-4])', line)
+            if dates_in_line is not None:
+                check_next_line = True
 
+                if committee_section:
+                    if len(values) == 0:
+                        failed.append(politician)
+                    else:
+                        person_committee_membership[key] = values
+                    committee_section = False
+
+                key = line
+                values = []
+                continue
+            
+            # If we found a date, the next line should introduce committee membership
+            if check_next_line:
+                if 'committee' in line:
+                    committee_section = True
+
+                check_next_line = False
+                continue
+
+            # If the next line introduced committee membership, we should now be in the committee membership section
             if committee_section:
-                if len(values) == 0:
-                    failed.append(politician)
-                else:
+                if (re.match(r'.*(20\d\d)', line) is not None) or (line == ''):
                     person_committee_membership[key] = values
-                committee_section = False
+                    break
+                values.append(line)
 
-            key = line
-            values = []
-            continue
-        
-        # If we found a date, the next line should introduce committee membership
-        if check_next_line:
-            if 'committee' in line:
-                committee_section = True
-
-            check_next_line = False
-            continue
-
-        # If the next line introduced committee membership, we should now be in the committee membership section
-        if committee_section:
-            if (re.match(r'.*(20\d\d)', line) is not None) or (line == ''):
-                person_committee_membership[key] = values
-                break
-            values.append(line)
-
-    committee_membership[politician] = person_committee_membership
+        committee_membership[politician] = person_committee_membership
+    except NoSuchElementException:
+        failed.append(politician)
 
 t_total = time() - t0
 
-with open(os.path.join(ROOT_DATA, 'ballotpedia.yml'), 'w') as f_nm:
+with open(os.path.join(PATH_DATA, 'ballotpedia.yml'), 'w') as f_nm:
     yaml.dump(committee_membership, f_nm, default_flow_style=False)
 
 print(f'time to scrape {len(committee_membership)} politician committee memberships: {t_total}')
@@ -212,60 +244,48 @@ print(failed)
 
 
 # ------------------------------------------------------------------------------
+# Close browser
+# ------------------------------------------------------------------------------
+browser.close()
+
+
+# ------------------------------------------------------------------------------
 # Scrape yahoo finance data for traded companies
 # ------------------------------------------------------------------------------
 print('\n', '#' * 80)
 print('Scraping finance.yahoo.com')
 
-base_url = 'https://finance.yahoo.com/quote/{}/profile'
-base_url_historical_data = 'https://finance.yahoo.com/quote/{}/history?period1=1598918400&period2=1693785600&interval=1d&filter=history&frequency=1d&includeAdjustedClose=false'
-
 tickers = [x.split(':')[0] for x in df.ticker.dropna().unique()]
+
 df_industry = pd.DataFrame()
 failed_sector, failed_data = [], []
 
 t0 = time()
-for ticker in tqdm(tickers):
-    browser.get(base_url.format(ticker))
+for ticker in tickers:
+    tick = yf.Ticker(ticker)
 
     try:
         df_industry = df_industry.append(
             pd.DataFrame(
-                data=[[ticker] + [x.split(': ')[-1] for x in browser.find_element(By.CSS_SELECTOR, "p[class='D(ib) Va(t)']").text.splitlines() if ('sector' in x.lower()) or  ('industry' in x.lower())]],
+                data=[[ticker, tick.info['sector'], tick.info['industry']]],
                 columns=['ticker', 'sector', 'industry']
             )
         )
-    except NoSuchElementException:
+    except: # TODO HTTPError:
         failed_sector.append(ticker)
 
-t_total = time() - t0
-
-df_industry.to_csv(os.path.join(ROOT_DATA, 'YahooFinance_industry.csv'), index=False)
-
-print(f'time to scrape {df_industry.shape[0]} company industries: {t_total}')
-print('\nFailed companies:')
-print(failed_sector)
-
-
-t0 = time()
-for ticker in tqdm(tickers):
-    browser.get(base_url_historical_data.format(ticker))
-    
-    try:
-        download_btn = browser.find_element(By.CSS_SELECTOR, "a[class='Fl(end) Mt(3px) Cur(p)']")
-        download_btn.click()
-    except NoSuchElementException:
-        failed_data.append(ticker)
+    df = pdr.get_data_yahoo(ticker, start='2020-09-01', end='2023-08-31')
+    if df.empty:
+        failed_sector.append(ticker)
+    else:
+        df.to_csv(os.path.join(PATH_DATA_PRICES, f'{ticker}.csv'), index=False)
 
 t_total = time() - t0
 
-print(f'time to download {tickers.shape[0]} company price datasets: {t_total}')
+print(f'time to download {df_industry.shape[0]} company industries: {t_total}')
 print('\nFailed companies:')
 print(failed_data)
 
-
-# ------------------------------------------------------------------------------
-# Close browser
-# ------------------------------------------------------------------------------
-browser.close()
-
+print(f'time to download {len(tickers)} company price datasets: {t_total}')
+print('\nFailed companies:')
+print(failed_sector)
