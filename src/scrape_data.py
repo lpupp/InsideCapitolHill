@@ -56,6 +56,8 @@ from pandas_datareader import data as pdr
 
 import pandas as pd
 
+from utils import flatten_list
+
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
@@ -93,17 +95,12 @@ firefox_options.set_preference('general.useragent.override', user_agent)
 # ------------------------------------------------------------------------------
 # Start browser
 # ------------------------------------------------------------------------------
-
 browser = webdriver.Firefox(service=firefox_service, options=firefox_options)
 
 
 # ------------------------------------------------------------------------------
 # Scrape capitoltrades.com trade data
 # ------------------------------------------------------------------------------
-def flatten_list(l):
-    return [item for row in l for item in row]
-
-
 def extract_text(child):
     """Extract text from Politician and Traded Issuer cells."""
     try:
@@ -278,7 +275,7 @@ for ticker in tickers:
     if df.empty:
         failed_sector.append(ticker)
     else:
-        df.to_csv(os.path.join(PATH_DATA_PRICES, f'{ticker}.csv'), index=False)
+        df.to_csv(os.path.join(PATH_DATA_PRICES, f'{ticker}.csv'))
 
 t_total = time() - t0
 
