@@ -33,47 +33,47 @@ Before running the project, ensure you have the following dependencies installed
 
 1. **tqdm**
     - Version: 4.62.1
-    - [Documentation](https://tqdm.github.io/)
+    - [https://tqdm.github.io/](https://tqdm.github.io/)
     ```bash
     pip install tqdm
     ```
 
 2. **yfinance**
     - Version: 0.2.28
-    - [Documentation](https://pypi.org/project/yfinance/)
+    - [https://pypi.org/project/yfinance/](https://pypi.org/project/yfinance/)
     ```bash
     pip install yfinance --upgrade --no-cache-dir
     ```
 
 3. **pandas_datareader**
     - Version: 0.10.0
-    - [Documentation](https://pandas-datareader.readthedocs.io/en/latest/)
+    - [https://pandas-datareader.readthedocs.io/en/latest/](https://pandas-datareader.readthedocs.io/en/latest/)
     ```bash
     pip install pandas-datareader
     ```
 
 4. **selenium**
     - Version: 4.7.0
-    - [Documentation](https://selenium-python.readthedocs.io/installation.html)
+    - [https://selenium-python.readthedocs.io/installation.html](https://selenium-python.readthedocs.io/installation.html)
     - *Note*: Installation might be tricky. I utilized geckodriver (v0.32.0) for Firefox. May the odds be ever in your favor with its setup!
 
 5. **beautifulsoup4**
     - Version: 4.12.2
-    - [Documentation](https://pypi.org/project/bs4/)
+    - [https://pypi.org/project/bs4/](https://pypi.org/project/bs4/)
     ```bash
     pip install bs4
     ```
 
 6. **sentence_transformers**
     - Version: 2.2.2
-    - [Documentation](https://www.sbert.net/)
+    - [https://www.sbert.net/](https://www.sbert.net/)
     ```bash
     pip install sentence-transformers
     ```
 
 7. **scikit-learn**
     - Version: 1.0.2
-    - [Documentation](https://scikit-learn.org/stable/)
+    - [https://scikit-learn.org/stable/](https://scikit-learn.org/stable/)
     ```bash
     pip install scikit-learn
     ```
@@ -102,4 +102,4 @@ However, given the complexities in setting up selenium, the scraped data has bee
 
 ## Analysis
 
-Find main exploration and findings in `capitol_hill_portfolio.ipynb`.
+Find main exploration and findings in `capitol_hill_portfolio.ipynb` or through [nbviewer](https://nbviewer.org/github/lpupp/InsideCapitolHill/blob/main/src/capitol_hill_portfolio.ipynb).
