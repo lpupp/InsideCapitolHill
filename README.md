@@ -25,7 +25,7 @@ US members of Congress, under the Stop Trading on Congressional Knowledge (STOCK
    - Source: [finance.yahoo.com](finance.yahoo.com)
    - Purpose: Essential for portfolio construction and evaluation. 
 
-Further details in `./src/scrape_data.py`.
+Further details in [the scraping script](src/scrape_data.py).
 
 ## Dependencies and Setup
 
@@ -102,4 +102,4 @@ However, given the complexities in setting up selenium, the scraped data has bee
 
 ## Analysis
 
-Find main exploration and findings in `capitol_hill_portfolio.ipynb` or through [nbviewer](https://nbviewer.org/github/lpupp/InsideCapitolHill/blob/main/src/capitol_hill_portfolio.ipynb).
+Find main exploration and findings in [the notebook](src/capitol_hill_portfolio.ipynb) or through [nbviewer](https://nbviewer.org/github/lpupp/InsideCapitolHill/blob/main/src/capitol_hill_portfolio.ipynb).
