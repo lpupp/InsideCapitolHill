@@ -4,6 +4,7 @@ import re
 import string
 
 import numpy as np
+import argparse
 
 ranks = [
     'ranking member',
@@ -49,13 +50,13 @@ word_list = [
 def flatten_list(l):
     """
     Flattens a nested list (one level deep) into a single list.
-    
+
     Parameters:
     - l (list of lists): A nested list to be flattened.
-    
+
     Returns:
     - list: A flattened list containing all the items from the nested list.
-    
+
     Example:
     >>> flatten_list([[1, 2], [3, 4], [5]])
     [1, 2, 3, 4, 5]
@@ -63,9 +64,29 @@ def flatten_list(l):
     return [item for row in l for item in row]
 
 
+def date_parser(string_list):
+    """
+    Parses a list of date strings in the format "Day MonthName Year"
+    (e.g., "16 Jan 2021") and returns them in the format "Year Month Day"
+    (e.g., "2018 01 16").
+
+    Parameters:
+    - string_list (list of str): List of date strings to be parsed.
+
+    Returns:
+    - list of str: A list of parsed date strings in the format "Year Month Day".
+
+    Example:
+    >>> date_parser(["16 Jan 2021"])
+    ['2021 01 16']
+    """
+    month_name = dict((k, v+1) for v, k in enumerate(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec']))
+    return [f"{x.split(' ')[2]} {int(month_name[x.split(' ')[4]]):02d} {int(x.split(' ')[3]):02d}" for x in string_list]
+
+
 def compute_average_from_range(value):
     """
-    Computes the average of a range given in string format. The function can also handle 
+    Computes the average of a range given in string format. The function can also handle
     ranges with 'K' (indicating thousands) and 'M' (indicating millions).
 
     Parameters:
@@ -82,6 +103,37 @@ def compute_average_from_range(value):
     """
     series = [int(y) for y in value.strip().replace('K', '000').replace('M', '000000').split('–')]
     return np.mean(np.array(series))
+
+
+def check_float_in_range(lb=0.0, ub=0.5):
+    """
+    Returns a function to be used as a type for argparse to check if a float value
+    lies within a specified range (lb, ub].
+
+    Parameters:
+    - lb (float, optional): The lower bound of the range (exclusive). Defaults to 0.0.
+    - ub (float, optional): The upper bound of the range (inclusive). Defaults to 0.5.
+
+    Returns:
+    - function: A function that takes a value as an argument and checks if it's a float
+                within the specified range. Raises argparse.ArgumentTypeError if
+                the value is not a float or is outside the range.
+
+    Example:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--value", type=check_float_in_range(0.0, 1.0))
+    """
+    def _check_float_in_range(value):
+        try:
+            fl_value = float(value)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f'{value} is invalid float value')
+
+        if (fl_value > ub) | (fl_value <= lb):
+            raise argparse.ArgumentTypeError(f'{fl_value} is outside of range ({lb}, {ub}]')
+
+        return fl_value
+    return _check_float_in_range
 
 
 def clean_committees(committees):
@@ -105,7 +157,7 @@ def clean_committees(committees):
     - list of str: A list of cleaned and unique committee names.
 
     Note:
-    - This function relies on several predefined global variables (e.g., `hand_filter`, `ranks`, and `word_list`) 
+    - This function relies on several predefined global variables (e.g., `hand_filter`, `ranks`, and `word_list`)
       which should be available in the function's scope.
     - Ensure all necessary global variables are initialized and updated as required.
     """
@@ -144,12 +196,12 @@ def get_committee_list(df, committee_membership):
 
     Parameters:
     - df (pandas.DataFrame): A DataFrame containing 'politician' and 'trade_year' columns.
-    - committee_membership (dict): A dictionary where keys are politician names and values are dictionaries 
+    - committee_membership (dict): A dictionary where keys are politician names and values are dictionaries
                                   mapping years/periods to a list of associated committees.
 
     Returns:
-    - pandas.DataFrame: The input DataFrame augmented with a 'committees' column containing lists of committees 
-                        associated with each politician for the given trade year. If no committee data is available 
+    - pandas.DataFrame: The input DataFrame augmented with a 'committees' column containing lists of committees
+                        associated with each politician for the given trade year. If no committee data is available
                         for a given year, the value is set as NaN.
 
     Notes:
@@ -167,7 +219,7 @@ def get_committee_list(df, committee_membership):
         if len(relevant_key) == 0:
             membership.append(np.nan)
             continue
-        
+
         membership.append(clean_committees(politician_committees[relevant_key[0]]))
 
     df_tmp['committees'] = membership
