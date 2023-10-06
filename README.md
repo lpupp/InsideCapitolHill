@@ -152,16 +152,14 @@ We use the workflow manager snakemake, which handles the installation of the req
 For best results:
 
 1. Fork the Project: Ensure you have forked the project to have requisite permissions for push operations.
-2. Update User and Repo Information: Make sure to update the username in the snakefile to redirect the data to the intended location. If you have the geckodriver pre-installed, replace `PATH_TO_GECKODRIVER`. If not, kindly remove the relevant line.
+2. Update User and Repo Information: Make sure to update the username in the snakefile to redirect the data to the intended location (change `your_user_name` and `forked_repo_name` below). 
+3. If you have the geckodriver pre-installed, replace `path/to/geckodriver` below. If not, kindly remove the relevant line.
 
 ```bash
 cd /path/to/InsideCapitolHill/fork
-GITHUB_USERNAME = your_user_name
-FORKED_REPO_NAME = forked_repo_name
-PATH_TO_GECKODRIVER = path/to/geckodriver
-sed -i 's|github_username_placeholder|$GITHUB_USERNAME|g' Snakefile
-sed -i 's|repo_name_placeholder|$FORKED_REPO_NAME|g' Snakefile
-sed -i 's|../../drivers/geckodriver|$PATH_TO_GECKODRIVER|g' Snakefile
+sed -i 's|github_username_placeholder|your_user_name|g' Snakefile
+sed -i 's|repo_placeholder|forked_repo_name|g' Snakefile
+sed -i 's|../../drivers/geckodriver|path/to/geckodriver|g' Snakefile
 conda activate snakemake
 snakemake --cores 1 --use-conda --conda-frontend conda
 ```
@@ -169,3 +167,8 @@ snakemake --cores 1 --use-conda --conda-frontend conda
 ### Output 
 
 You can find a small cockpit  `https://$GITHUB_USERNAME.github.io/$REPO_NAME`. It should launch automatically after deployment.
+
+sed -i 's|github_username_placeholder|lpupp|g' Snakefile
+sed -i 's|repo_placeholder|InsideCapitolHill|g' Snakefile
+conda activate snakemake
+snakemake --cores 1 --use-conda --conda-frontend conda
