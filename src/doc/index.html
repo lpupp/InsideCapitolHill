@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link rel="stylesheet" href="css/style.css">
+    <title>Capitol Hill Long-Short Portfolio Performance</title>
+
+    <!-- Add your CSS links here (e.g., Bootstrap, custom styles) -->
+    <!-- Add JS libraries here (e.g., D3.js, Plotly) -->
+
+</head>
+
+<body>
+
+    <header>
+        <h1>Capitol Hill Long-Short Portfolio Performance</h1>
+    </header>
+
+    <main>
+
+        <!-- Portfolio Stats -->
+        <section class="portfolio-stats">
+            <div class="stat">
+                <h2>Current wealth</h2>
+                <p id="current-wealth"></p>
+            </div>
+
+            <div class="stat">
+                <h2>Return</h2>
+                <p id="return-percent"></p>
+                <p id="return-gain"></p>
+            </div>
+
+            <div class="stat">
+                <h2>Total deposits</h2>
+                <p id="total-deposits"></p>
+            </div>
+        </section>
+
+        <!-- Portfolio & S&P500 Returns Plot -->
+        <section class="returns-plot">
+            <h2>Portfolio returns</h2>
+            <div id="plot">
+                <!-- The D3.js script will append the SVG chart here -->
+            </div>
+        </section>
+
+        <!-- Portfolio Composition: Table & Pie Chart -->
+        <section class="portfolio-composition">
+
+            <!-- Left: Table -->
+            <div class="composition-table">
+                <h2>Current portfolio composition</h2>
+                <table id="portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <!--<th>Position</th> -->
+                            <th>Relative size</th>
+                            <th>N assets</th>
+                            <th>Value (CHF)</th>
+                            <th>Price (CHF)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- D3.js will populate the rows here -->
+                    </tbody>
+                </table>
+                
+            </div>
+
+            <!-- Right: Pie Chart -->
+            <div class="composition-chart">
+                <h3>Long portfolio composition</h3>
+                <div id="pie-long"></div>
+                <h3>Short portfolio composition</h3>
+                <div id="pie-short"></div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="js/plot.js"></script>
+    <script src="js/table.js"></script>
+</body>
+
+</html>
