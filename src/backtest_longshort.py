@@ -1,11 +1,27 @@
 """
-add --scrape_only_new args
-debug long_short.py
-have some portfolio output document
+Portfolio Backtester and Visualizer Script
+
+This script performs the following tasks:
+
+1. Loads Capitol trades data.
+2. Cleans the Capitol trades data using the `clean_capitol_trades_data` function.
+3. Determines the date range for backtesting. If start and end dates are not provided as arguments, 
+   it uses the earliest and latest dates available in the data.
+4. Loads price data.
+5. Backtests a portfolio based on the trades and price data using the `backtest_portfolio` function.
+6. Saves the composition of the portfolio holdings to a CSV file.
+7. Appends S&P 500 data to the portfolio wealth data for comparison purposes.
+8. Saves the portfolio's performance data to a CSV file.
+9. Plots the portfolio's performance.
+10. Visualizes the long and short portfolio composition for each unique date.
+
+Usage:
+Simply run the script to execute the backtest and visualization processes. Ensure that all required arguments 
+and data paths are set appropriately. See README for more details.
 """
 
 import os
-import yaml
+import pathlib
 from datetime import timedelta
 
 import numpy as np
@@ -15,7 +31,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 
-from utils import compute_average_from_range, date_parser, check_float_in_range
+from utils import compute_average_from_range, check_float_in_range
 
 import yfinance as yf
 from pandas_datareader import data as pdr
@@ -184,7 +200,7 @@ def compute_holdings(df, wealth, scale):
     return df, wealth_new
 
 
-def backtest_portfolio(df_trades_to_copy, df_historical_prices, dates, portfolio_sample=1/3):
+def backtest_portfolio(df_trades_to_copy, df_historical_prices, initial_wealth, dates, portfolio_sample=1/3):
     """
     Backtests a portfolio based on a given set of trade data, historical prices, and date range.
 
@@ -203,10 +219,10 @@ def backtest_portfolio(df_trades_to_copy, df_historical_prices, dates, portfolio
     - Backtesting is done by dividing the portfolio into 'short' and 'long' positions based on the `portfolio_sample` value.
     - Wealth is computed based on the performance of these positions.
     """
-    ws = [1]
+    ws = [initial_wealth]
 
     df_pf = pd.DataFrame()
-    for i, date in enumerate(dates):
+    for i, date in enumerate(dates[1:]):
         wealth = ws[-1]
 
         portfolio = select_date_and_merge_with_prices(df_trades_to_copy, df_historical_prices, date)
@@ -223,17 +239,19 @@ def backtest_portfolio(df_trades_to_copy, df_historical_prices, dates, portfolio
             long, wealth_long_new = compute_holdings(long, wealth, 1+scale)
             short, wealth_short_new = compute_holdings(short, wealth, -scale)
 
-            df_pf = df_pf.append(pd.concat(long, short))
+            long['position'] = 'long'
+            short['position'] = 'short'
+
+            df_pf = df_pf.append(pd.concat([long, short]))
 
             wealth_new = wealth_long_new + wealth_short_new
 
         ws.append(wealth_new)
 
-    # TODO append 1 week earlier to beginning of date
     return pd.DataFrame({'date': dates, 'wealth': ws}), df_pf
 
 
-def plot_portfolio_performance(portfolio_wealth, start_date, end_date, save_path=None):
+def plot_portfolio_performance(portfolio_wealth, save_path=None):
     """
     Plots the performance of a portfolio in comparison to the S&P 500 index over a given time range.
 
@@ -244,13 +262,10 @@ def plot_portfolio_performance(portfolio_wealth, start_date, end_date, save_path
     - end_date (datetime.datetime): End date of the performance period.
     - save_path (str, optional): Path to save the plot as an image file. If not provided, the plot is displayed instead.
     """
-    spx = load_spx(start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
-
-    n_spx_shares = 1 / spx['Close'].iloc[0]
-
+    initial_wealth = portfolio_wealth.wealth[0]
     plt.figure(figsize=(25, 7))
-    plt.plot(portfolio_wealth.date, [w for w in portfolio_wealth.wealth], label='Long short portfolio')
-    plt.plot(spx.index, (spx['Close'] * n_spx_shares), label='S&P500')
+    plt.plot(portfolio_wealth.date, portfolio_wealth.wealth / initial_wealth, label='Long short portfolio')
+    plt.plot(portfolio_wealth.date, portfolio_wealth.wealth_spx / initial_wealth, label='S&P500')
     plt.legend()
     if save_path is None:
         plt.show()
@@ -259,8 +274,74 @@ def plot_portfolio_performance(portfolio_wealth, start_date, end_date, save_path
     plt.close()
 
 
+def long_short_portfolio_composition(portfolio, date, save_path):
+    """
+    Visualize the composition of a long-short portfolio on a given date.
+
+    This function generates two pie charts: one for the long positions and one for the short positions 
+    in the portfolio. Non-zero weighted assets are displayed in the charts.
+
+    Parameters:
+    - portfolio (DataFrame): A pandas DataFrame containing portfolio data with columns 'Date', 'position', 'weights', and 'ticker'.
+    - date (str or datetime-like): The date for which the portfolio composition is to be visualized.
+    - save_path (str, optional): If provided, the path (with optional string formatting for date) where the resulting plot 
+      should be saved. If not provided, the plot will be shown interactively.
+    """
+    long = portfolio[(portfolio.Date == date) & (portfolio.position == 'long')]
+    short = portfolio[(portfolio.Date == date) & (portfolio.position == 'short')]
+
+    _, axes= plt.subplots(1, 2, figsize=(13, 7))
+
+    axes[0].pie(long.loc[long.weights != 0.0, 'weights'],
+            labels=long.loc[long.weights != 0.0, 'ticker'],
+            radius=1.0, autopct="%.1f%%", pctdistance=0.8)
+    axes[0].set_title('Long')
+    axes[1].pie(short.loc[short.weights != 0.0, 'weights'],
+            labels=short.loc[short.weights != 0.0, 'ticker'],
+            radius=0.5, autopct="%.1f%%", pctdistance=0.8)
+    axes[1].set_title('Short')
+    if save_path is None:
+        plt.show()
+    else:
+        plt.savefig(save_path.format(pd.to_datetime(date).strftime('%Y%m%d')))
+    plt.close()
+
+
+def compute_spx_portfolio(start_date, end_date):
+    """
+    Compute the relative wealth of the S&P 500 index over a specified date range.
+
+    This function loads the S&P 500 index data for the given date range and computes the relative 
+    wealth based on the closing prices, normalized to the first date's closing price.
+
+    Parameters:
+    - start_date (datetime.date or similar datetime-like object): Start date of the desired data range.
+    - end_date (datetime.date or similar datetime-like object): End date of the desired data range.
+    """
+    spx = load_spx(start_date.strftime('%Y-%m-%d'), (end_date+timedelta(days=1)).strftime('%Y-%m-%d'))
+    return (spx['Close'] / spx['Close'].iloc[0]).rename('wealth_spx').to_frame()
+
+
 def main():
 
+    class Args():
+        def __init__(self):
+            self.data_path = 'data'
+            self.capitoltrades_filename = "CapitolTrades_raw"
+            self.prices_dirname="yfinance_prices"
+            self.wealth_initial=10000.0
+            self.portfolio_sample=0.33333333
+            self.start_date=None
+            self.end_date=None
+            self.save_dir="portfolios"
+            self.performance_filename="wealth"
+            self.composition_filename="composition"
+            self.plot_performance_filename="wealth_plot"
+            self.plot_composition_filename="composition_plot"
+    args = Args()
+
+
+    
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -271,74 +352,113 @@ def main():
         )
 
     parser.add_argument(
-        "--capitoltrades_data",
-        help="Capitol Trades file name. Default: CapitolTrades_raw.csv",
+        "--capitoltrades_filename",
+        help="Capitol Trades file name. Default: CapitolTrades_raw",
         type=str,
-        default="CapitolTrades_raw.csv"
+        default="CapitolTrades_raw"
         )
 
     parser.add_argument(
+        "--prices_dirname",
+        help="Directory name where stock prices data is stored. Default: yfinance_prices",
+        type=str,
+        default="yfinance_prices"
+        )
+    
+    parser.add_argument(
         "--wealth_initial",
-        help="Initial starting wealth of investor.",
+        help="Initial starting wealth of investor. Default: 10_000.0",
         type=float,
-        default=100000.0
+        default=10000.0
         )
 
     parser.add_argument(
         "--portfolio_sample",
-        help="TODO.",
+        help="Fraction of total available stocks to include in the portfolio sample. Should be between 0.0 and 0.5. Default: 0.33333333",
         type=check_float_in_range(lb=0.0, ub=0.5),
         default=0.33333333
         )
 
     parser.add_argument(
         "--start_date",
-        help="TODO",
-        type=str,
-        default='2020-09-03'
+        help="Start date for the analysis in the format 'YYYY-MM-DD'.",
+        type=str
         )
 
     parser.add_argument(
         "--end_date",
-        help="TODO",
-        type=str,
-        default='2023-08-15'
+        help="End date for the analysis in the format 'YYYY-MM-DD'.",
+        type=str
         )
 
     parser.add_argument(
-        "--save_path",
-        help="TODO",
+        "--save_dir",
+        help="Directory where the analysis results and portfolios will be saved. Default: portfolios",
         type=str,
-        default="TODO"
+        default="portfolios"
         )
 
-    # parser.add_argument('--savefailed', action='store_true')
-    # parser.add_argument('--no-savefailed', dest='savefailed', action='store_false')
-    # parser.set_defaults(savefailed=False)
+    parser.add_argument(
+        "--performance_filename",
+        help="File name to save the wealth performance of the portfolios. Default: wealth",
+        type=str,
+        default="wealth"
+        )
+    
+    parser.add_argument(
+        "--composition_filename",
+        help="File name to save the composition of the portfolios. Default: composition",
+        type=str,
+        default="composition"
+        )
+    
+    parser.add_argument(
+        "--plot_performance_filename",
+        help="File name for saving the plotted performance of the portfolios.",
+        type=str,
+        )
+    
+    parser.add_argument(
+        "--plot_composition_filename",
+        help="File name for saving the plotted composition of the portfolios.",
+        type=str,
+        )
 
     args = parser.parse_args()
 
-    ROOT = os.path.dirname(os.getcwd())
+    ROOT = os.getcwd()
+    if pathlib.PurePath(ROOT).name == 'src':
+        raise Exception('Please run the script from the root directory.')
+
     PATH_DATA = os.path.join(ROOT, args.data_path)
-    PATH_DATA_PRICES = os.path.join(PATH_DATA, 'yfinance_prices')
-    PATH_DATA_PORTFOLIOS = os.path.join(ROOT, 'portfolios')
+    PATH_DATA_PRICES = os.path.join(PATH_DATA, args.prices_dirname)
+    PATH_DATA_PORTFOLIOS = os.path.join(PATH_DATA, args.save_dir)
+
+    capitoltrades_fl = os.path.join(PATH_DATA, f'{args.capitoltrades_filename}.csv')
+    composition_fl = os.path.join(PATH_DATA_PORTFOLIOS, f'{args.composition_filename}.csv')
+    performance_fl = os.path.join(PATH_DATA_PORTFOLIOS, f'{args.performance_filename}.csv')
+
+    if args.plot_composition_filename is None:
+        composition_plot_fl = None
+    else:
+        composition_plot_fl = os.path.join(PATH_DATA_PORTFOLIOS, args.plot_composition_filename + '_{}.png')
+
+    if args.plot_performance_filename is None:
+        performance_plot_fl = None
+    else:
+        performance_plot_fl = os.path.join(PATH_DATA_PORTFOLIOS, f'{args.plot_performance_filename}.png')
 
     try:
         os.makedirs(PATH_DATA_PORTFOLIOS)
     except OSError:
         pass
 
-    min_week = pd.to_datetime(args.start_date)
-    max_week = pd.to_datetime(args.end_date)
-
-    # TODO if the start or end dates are outside of the df_trades date range: terminate!!!
-
+    print('Loading data')
     df_trades = pd.read_csv(
-            os.path.join(args.data_path, args.capitoltrades_data),
+            capitoltrades_fl,
             parse_dates=[
                 'traded'
                 ],
-            date_parser=date_parser,
             usecols=[
                 'politician',
                 'trade_issuer',
@@ -355,23 +475,50 @@ def main():
                 'type': 'category',
                 },
         )
-
+    
+    print('Cleaning data')
     df_trades = clean_capitol_trades_data(df_trades, PATH_DATA_PRICES)
+
+    earliest_date = df_trades.week_date.min()
+    today = pd.to_datetime('today')
+    if args.start_date is None:
+        min_week = earliest_date
+        max_week = today
+    else:
+        min_week = pd.to_datetime(args.start_date)
+        max_week = pd.to_datetime(args.end_date)
+        if min_week.date() < earliest_date.date():
+            print('overriding start date to earliest available date: 2019-01-01')
+            min_week = earliest_date
+        if max_week.date() > today.date():
+            print('overriding end date to today')
+            max_week = today
+
+    print('Loading prices')
     df_prices = load_prices(df_trades.ticker.dropna().unique(), PATH_DATA_PRICES)
 
     # Week freq rounds to Sunday. We want Friday closing prices, so we subtract 2 days.
-    dates = pd.date_range(min_week, max_week, freq='W') - timedelta(days=2)
+    dates = pd.date_range(min_week-timedelta(days=7), max_week, freq='W') - timedelta(days=2)
 
-    portfolio_wealth, portfolio_holdings = backtest_portfolio(df_trades, df_prices, dates, args.portfolio_sample)
+    print('Backtesting portfolio')
+    portfolio_wealth, portfolio_holdings = backtest_portfolio(df_trades, df_prices, args.wealth_initial, dates, args.portfolio_sample)
 
-    portfolio_fn = os.path.join(PATH_DATA, 'portfolios', f'portfolio_holdings_{args.start_date}-{args.end_date}.yml')
-    portfolio_holdings.to_csv(portfolio_fn)
+    print('Generating outputs')
+    print('# Saving')
+    portfolio_holdings.to_csv(composition_fl, index=False)
 
-    wealth_fn = os.path.join(PATH_DATA, 'portfolios', f'wealth_{args.start_date}-{args.end_date}.yml')
-    portfolio_wealth.to_csv(wealth_fn)
+    # Append spx for comparison
+    spx = compute_spx_portfolio(dates[0], dates[-1])
+    portfolio_wealth = portfolio_wealth.merge(spx*args.wealth_initial, how='left', left_on='date', left_index=False, right_index=True)
+    portfolio_wealth.fillna(method='ffill', inplace=True)
 
-    plot_portfolio_performance(portfolio_wealth, min_week, max_week, args.save_path)
+    portfolio_wealth.to_csv(performance_fl, index=False)
 
+    print('# Plotting')
+    plot_portfolio_performance(portfolio_wealth, performance_plot_fl)
+    for date in portfolio_holdings.Date.unique():
+        long_short_portfolio_composition(portfolio_holdings, date, composition_plot_fl)
+        
 
 if __name__ == '__main__':
     main()
