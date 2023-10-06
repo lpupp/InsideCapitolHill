@@ -2,7 +2,7 @@
 
 US members of Congress, under the Stop Trading on Congressional Knowledge (STOCK) Act, are required to declare their trades, shedding light on their financial activities. Some studies, like [Karadas (2017)](https://link.springer.com/article/10.1007/s12197-017-9384-z), show significant returns from congressional trades. This project probes whether politicians potentially exploit insider information for above-market returns.
 
-## Key Features:
+## Key features:
 
 1. **Trade-Committee Matching**: Links a Congress member's committee membership with the industry of a traded firm.
 2. **Advanced Matching**: Uses a pretrained language model to connect committees and industries, ensuring a more comprehensive match than straightforward approaches.
@@ -11,11 +11,11 @@ US members of Congress, under the Stop Trading on Congressional Knowledge (STOCK
 
 1. **Congress Trades**: 
    - Source: [CapitolTrades.com](https://www.capitoltrades.com/trades)
-   - Extraction: Used [`selenium`](https://selenium-python.readthedocs.io/installation.html) to scrape.
+   - Tool: Used [`selenium`](https://selenium-python.readthedocs.io/installation.html) to scrape.
 
 2. **Congress Committee Membership**: 
    - Source: [ballotpedia.org](ballotpedia.org)
-   - Extraction: Data scraped for each politician using `selenium`. (Note: `requests` package would suffice as alternative.)
+   - Tool: Data scraped for each politician using `selenium`. (Note: `requests` package would suffice as alternative.)
 
 3. **Firm's Industry and Sector Info**: 
    - Source: [finance.yahoo.com](finance.yahoo.com) 
@@ -25,11 +25,25 @@ US members of Congress, under the Stop Trading on Congressional Knowledge (STOCK
    - Source: [finance.yahoo.com](finance.yahoo.com)
    - Purpose: Essential for portfolio construction and evaluation. 
 
-Further details in [the scraping script](src/scrape_data.py).
+Further details in the [scraping script](src/scrape_data.py).
 
-## Dependencies and Setup
+## Dependencies and setup
 
-Before running the project, ensure you have the following dependencies installed:
+Before running the project, ensure you have installed the dependencies by either cloning the environment ([founf here](envs/env_pp4rs.yaml)) or installing them manually. To clone environment, run:
+```bash
+conda env create -f envs/env_pp4rs.yaml
+```
+
+Note however, the [scraping script](src/scrape_data.py) will not run without installing a webdriver. See next section for advice.
+
+Should you with to run the notebook, make environment available for notebook by running:
+```bash
+conda activate env_pp4rs
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=env_pp4rs
+```
+
+Otherwise, install the following dependencies manually:
 
 1. **tqdm**
     - Version: 4.62.1
@@ -78,19 +92,7 @@ Before running the project, ensure you have the following dependencies installed
     pip install scikit-learn
     ```
 
-Dependencies included [here](envs/env_pp4rs.yaml). Clone environment with:
-```bash
-conda env create -f envs/env_pp4rs.yaml
-```
-
-To make environment available for notebook, run:
-```bash
-conda activate env_pp4rs
-conda install -c anaconda ipykernel
-python -m ipykernel install --user --name=env_pp4rs
-```
-
-### Installing Geckodriver
+### Installing geckodriver
 
 `selenium` is needed to scrape the [CapitolTrades.com](https://www.capitoltrades.com/trades) as the standard `requests` package fails with the dynamic tables. 
 
@@ -104,25 +106,25 @@ To install Firefox (for Mac (with homebrew installed) and Linux OS):
 sh src/install_firefox.sh
 ```
 
-If this does not work. Please follow standard geckodriver installation online tools. Alternatively, a Chrome driver can be installed, however, small changes to [src/scrape_data.py](src/scrape_data.py) would have to be made.
+If this does not work. Please follow standard `geckodriver` installation online tools. Alternatively, a Chrome driver can be installed, however, small changes to [src/scrape_data.py](src/scrape_data.py) would have to be made.
 
-## Data Scraping
+## Data scraping
 
 To scrape the necessary data, run the following command:
 
-```
+```bash
 conda activate env_pp4rs
 
 python src/scrape_data.py \
---output_data_path data \
---capitoltrades_filename CapitolTrades_raw \
---ballotpedia_filename ballotpedia \
---company_metadata_filename YahooFinance_industry \
---prices_dirname yfinance_prices \
+--output_data_path 'data' \
+--capitoltrades_filename 'CapitolTrades_raw' \
+--ballotpedia_filename 'ballotpedia' \
+--company_metadata_filename 'YahooFinance_industry' \
+--prices_dirname 'yfinance_prices' \
 --path_to_geckodriver '/path/to/geckodriver'
 ```
 
-### Data Output Directory Structure:
+### Data output directory structure:
 
 - `CapitolTrades_raw.csv`: Trades executed by Congress members.
 - `ballotpedia.yml`: Dictionary capturing politicians' committee membership.
@@ -133,7 +135,7 @@ python src/scrape_data.py \
 
 Find main exploration and findings in [the notebook](src/analysis/capitol_hill_portfolio.ipynb) or through [nbviewer](https://nbviewer.org/github/lpupp/InsideCapitolHill/blob/main/src/analysis/capitol_hill_portfolio.ipynb).
 
-## Real-time Backtesting
+## Real-time backtesting
 
 To keep this project relevant, I've integrated the ability to fetch fresh data directly from [CapitolTrades.com](https://www.capitoltrades.com/trades) and [finance.yahoo.com](finance.yahoo.com) to ensures you're always copying the most recent Congressional trades. The performance of your long-short strategy can be evaluated in a web-cockpit (on GithHub Pages).
 
