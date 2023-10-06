@@ -141,7 +141,7 @@ To keep this project relevant, I've integrated the ability to fetch fresh data d
 
 ### Dependencies
 
-We use the workflow manager snakemake, which handles the installation of the required dependencies into a local virtual environment. With this method, the only external dependencies are:
+We use the workflow manager `snakemake`, which handles the installation of the required dependencies into a local virtual environment. With this method, the only external dependencies are:
 
 1. Install [anaconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) based on your operating system
 2. Install [snakemake](https://snakemake.github.io/), ideally in its own separate conda virtual environment:
