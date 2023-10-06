@@ -15,7 +15,7 @@ US members of Congress, under the Stop Trading on Congressional Knowledge (STOCK
 
 2. **Congress Committee Membership**: 
    - Source: [ballotpedia.org](ballotpedia.org)
-   - Extraction: Data scraped for each politician using `selenium`.
+   - Extraction: Data scraped for each politician using `selenium`. (Note: `requests` package would suffice as alternative.)
 
 3. **Firm's Industry and Sector Info**: 
    - Source: [finance.yahoo.com](finance.yahoo.com) 
@@ -55,7 +55,7 @@ Before running the project, ensure you have the following dependencies installed
 4. **selenium**
     - Version: 4.7.0
     - [https://selenium-python.readthedocs.io/installation.html](https://selenium-python.readthedocs.io/installation.html)
-    - *Note*: Installation might be tricky. I utilized geckodriver (v0.32.0) for Firefox. May the odds be ever in your favor with its setup!
+    - *Note*: Installation might be tricky. I utilized geckodriver (v0.32.0) for Firefox. See [this bash script](src/setup/install_geckodriver.sh) that hopefully helps with installation. May the odds be ever in your favor!
 
 5. **beautifulsoup4**
     - Version: 4.12.2
@@ -78,22 +78,51 @@ Before running the project, ensure you have the following dependencies installed
     pip install scikit-learn
     ```
 
-Dependencies included in requirements.txt (`selenium` not included).
+Dependencies included [here](envs/env_pp4rs.yaml). Clone environment with:
 ```bash
-pip install -r requirements.txt
+conda env create -f envs/env_pp4rs.yaml
 ```
 
-## Data Extraction
+To make environment available for notebook, run:
+```bash
+conda activate env_pp4rs
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=env_pp4rs
+```
+
+### Installing Geckodriver
+
+`selenium` is needed to scrape the [CapitolTrades.com](https://www.capitoltrades.com/trades) as the standard `requests` package fails with the dynamic tables. 
+
+There are bash scripts to install a geckodriver to run `selenium` with Firefox.
+```bash
+sh src/install_geckodriver.sh /path/to/geckodriver
+```
+
+To install Firefox (for Mac (with homebrew installed) and Linux OS):
+```bash
+sh src/install_firefox.sh
+```
+
+If this does not work. Please follow standard geckodriver installation online tools. Alternatively, a Chrome driver can be installed, however, small changes to [src/scrape_data.py](src/scrape_data.py) would have to be made.
+
+## Data Scraping
 
 To scrape the necessary data, run the following command:
 
-```bash
-python src/scrape_data.py
+```
+conda activate env_pp4rs
+
+python src/scrape_data.py \
+--output_data_path data \
+--capitoltrades_filename CapitolTrades_raw \
+--ballotpedia_filename ballotpedia \
+--company_metadata_filename YahooFinance_industry \
+--prices_dirname yfinance_prices \
+--path_to_geckodriver '/path/to/geckodriver'
 ```
 
-However, given the complexities in setting up selenium, the scraped data has been provided in the `data` directory. *Note: This pre-scraped data will be removed in approx. 2 weeks.*
-
-### Data Directory Structure:
+### Data Output Directory Structure:
 
 - `CapitolTrades_raw.csv`: Trades executed by Congress members.
 - `ballotpedia.yml`: Dictionary capturing politicians' committee membership.
@@ -102,4 +131,41 @@ However, given the complexities in setting up selenium, the scraped data has bee
 
 ## Analysis
 
-Find main exploration and findings in [the notebook](src/capitol_hill_portfolio.ipynb) or through [nbviewer](https://nbviewer.org/github/lpupp/InsideCapitolHill/blob/main/src/capitol_hill_portfolio.ipynb).
+Find main exploration and findings in [the notebook](src/analysis/capitol_hill_portfolio.ipynb) or through [nbviewer](https://nbviewer.org/github/lpupp/InsideCapitolHill/blob/main/src/analysis/capitol_hill_portfolio.ipynb).
+
+## Real-time Backtesting
+
+To keep this project relevant, I've integrated the ability to fetch fresh data directly from [CapitolTrades.com](https://www.capitoltrades.com/trades) and [finance.yahoo.com](finance.yahoo.com) to ensures you're always copying the most recent Congressional trades. The performance of your long-short strategy can be evaluated in a web-cockpit (on GithHub Pages).
+
+### Dependencies
+
+We use the workflow manager snakemake, which handles the installation of the required dependencies into a local virtual environment. With this method, the only external dependencies are:
+
+1. Install [anaconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) based on your operating system
+2. Install [snakemake](https://snakemake.github.io/), ideally in its own separate conda virtual environment:
+   ```bash
+   conda create -c conda-forge -c bioconda -n snakemake snakemake
+   ```
+
+### Deployment
+
+For best results:
+
+1. Fork the Project: Ensure you have forked the project to have requisite permissions for push operations.
+2. Update User and Repo Information: Make sure to update the username in the snakefile to redirect the data to the intended location. If you have the geckodriver pre-installed, replace `PATH_TO_GECKODRIVER`. If not, kindly remove the relevant line.
+
+```bash
+cd /path/to/InsideCapitolHill/fork
+GITHUB_USERNAME = your_user_name
+FORKED_REPO_NAME = forked_repo_name
+PATH_TO_GECKODRIVER = path/to/geckodriver
+sed -i 's|github_username_placeholder|$GITHUB_USERNAME|g' Snakefile
+sed -i 's|repo_name_placeholder|$FORKED_REPO_NAME|g' Snakefile
+sed -i 's|../../drivers/geckodriver|$PATH_TO_GECKODRIVER|g' Snakefile
+conda activate snakemake
+snakemake --cores 1 --use-conda --conda-frontend conda
+```
+
+### Output 
+
+You can find a small cockpit  `https://$GITHUB_USERNAME.github.io/$REPO_NAME`. It should launch automatically after deployment.
