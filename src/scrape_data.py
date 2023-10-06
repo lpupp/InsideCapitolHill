@@ -500,7 +500,6 @@ def main():
         "--path_to_geckodriver",
         help="The path to the output file. Default: data",
         type=str,
-        default='/home/lpupp/Documents/drivers/geckodriver'
         )
 
     parser.add_argument('--capitoltrades', action='store_true')
