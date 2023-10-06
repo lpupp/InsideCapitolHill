@@ -167,8 +167,3 @@ snakemake --cores 1 --use-conda --conda-frontend conda
 ### Output 
 
 You can find a small cockpit  `https://$GITHUB_USERNAME.github.io/$REPO_NAME`. It should launch automatically after deployment.
-
-sed -i 's|github_username_placeholder|lpupp|g' Snakefile
-sed -i 's|repo_placeholder|InsideCapitolHill|g' Snakefile
-conda activate snakemake
-snakemake --cores 1 --use-conda --conda-frontend conda
