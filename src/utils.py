@@ -4,7 +4,13 @@ import re
 import string
 
 import numpy as np
+import pandas as pd
 import argparse
+
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
+
 
 ranks = [
     'ranking member',
@@ -64,6 +70,7 @@ def flatten_list(l):
     return [item for row in l for item in row]
 
 
+
 def date_parser(string_list):
     """
     Parses a list of date strings in the format "Day MonthName Year"
@@ -80,8 +87,29 @@ def date_parser(string_list):
     >>> date_parser(["16 Jan 2021"])
     ['2021 01 16']
     """
+    date_today = pd.datetime.today()
+    date_yesterday = date_today - pd.Timedelta(days=1)
     month_name = dict((k, v+1) for v, k in enumerate(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec']))
-    return [f"{x.split(' ')[2]} {int(month_name[x.split(' ')[4]]):02d} {int(x.split(' ')[3]):02d}" for x in string_list]
+    month_ix = dict((k+1, v) for k, v in enumerate(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec']))
+
+    def catch_today_yesterday(x):
+        """
+        x: date_string in the format 'Year Day MonthName.'
+        """
+        if 'today' in x.lower():
+            return '  {0} {1} {2}'.format(date_today.year, date_today.day, month_ix[int(date_today.month)])
+        elif 'yesterday' in x.lower():
+            return '  {0} {1} {2}'.format(date_yesterday.year, date_yesterday.day, month_ix[int(date_yesterday.month)])
+        else:
+            return x
+
+    def YYYYDDMM_to_YYYYMMDD(x):
+        """
+        x: date_string in the format 'Year Day MonthName.'
+        """
+        return f"{x.split(' ')[2]} {int(month_name[x.split(' ')[4]]):02d} {int(x.split(' ')[3]):02d}"
+
+    return [YYYYDDMM_to_YYYYMMDD(catch_today_yesterday(x)) for x in string_list]
 
 
 def compute_average_from_range(value):
@@ -135,6 +163,20 @@ def check_float_in_range(lb=0.0, ub=0.5):
         return fl_value
     return _check_float_in_range
 
+
+def safe_get_user_agent(path_to_geckodriver):
+    try:
+        firefox_service = Service(path_to_geckodriver)
+        firefox_options = Options()
+        firefox_options.add_argument('--headless')
+        browser = webdriver.Firefox(service=firefox_service, options=firefox_options)
+        browser.get("https://www.seleniumhq.org/download/")
+        user_agent = browser.execute_script("return navigator.userAgent")
+        browser.close()
+        return user_agent
+    except:
+        return None
+            
 
 def clean_committees(committees):
     """
