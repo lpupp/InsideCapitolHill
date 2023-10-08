@@ -382,7 +382,7 @@ def main():
 
     parser.add_argument('--plot_results', action='store_true')
     parser.add_argument('--dont_plot_results', dest='plot_results', action='store_false')
-    parser.set_defaults(dont_plot_results=False)
+    parser.set_defaults(plot_results=False)
 
     args = parser.parse_args()
 

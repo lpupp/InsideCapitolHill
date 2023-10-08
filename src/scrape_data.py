@@ -402,7 +402,9 @@ def collect_ticker_prices(tickers, data_path, start_date='2020-09-01', end_date=
             continue
 
         df = safe_get_data_yahoo(ticker, start_date, end_date)
-        if df.empty:
+        if df is None:
+            failed.append(ticker)
+        elif df.empty:
             failed.append(ticker)
         else:
             if light:
