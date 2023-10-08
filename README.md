@@ -114,7 +114,6 @@ To scrape the necessary data, run the following command:
 
 ```bash
 conda activate env_pp4rs
-
 python src/scrape_data.py --path_to_geckodriver '/path/to/geckodriver'
 ```
 
