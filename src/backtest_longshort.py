@@ -324,45 +324,20 @@ def compute_spx_portfolio(start_date, end_date):
 
 def main():
 
-    class Args():
-        def __init__(self):
-            self.data_path = 'data'
-            self.capitoltrades_filename = "CapitolTrades_raw"
-            self.prices_dirname="yfinance_prices"
-            self.wealth_initial=10000.0
-            self.portfolio_sample=0.33333333
-            self.start_date=None
-            self.end_date=None
-            self.save_dir="portfolios"
-            self.performance_filename="wealth"
-            self.composition_filename="composition"
-            self.plot_performance_filename="wealth_plot"
-            self.plot_composition_filename="composition_plot"
-    args = Args()
-
-
-    
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--data_path",
-        help="The path to the output file. Default: data",
-        type=str,
-        default="data"
-        )
-
-    parser.add_argument(
         "--capitoltrades_filename",
-        help="Capitol Trades file name. Default: CapitolTrades_raw",
+        help="Capitol Trades file name. Default: ./data/CapitolTrades_raw.csv",
         type=str,
-        default="CapitolTrades_raw"
+        default="./data/CapitolTrades_raw.csv"
         )
 
     parser.add_argument(
         "--prices_dirname",
-        help="Directory name where stock prices data is stored. Default: yfinance_prices",
+        help="Directory name where stock prices data is stored. Default: ./data/yfinance_prices",
         type=str,
-        default="yfinance_prices"
+        default="./data/yfinance_prices"
         )
     
     parser.add_argument(
@@ -392,37 +367,22 @@ def main():
         )
 
     parser.add_argument(
-        "--save_dir",
-        help="Directory where the analysis results and portfolios will be saved. Default: portfolios",
-        type=str,
-        default="portfolios"
-        )
-
-    parser.add_argument(
         "--performance_filename",
-        help="File name to save the wealth performance of the portfolios. Default: wealth",
+        help="File name to save the wealth performance of the portfolios. Default: ./data/portfolios/wealth.csv",
         type=str,
-        default="wealth"
+        default="./data/portfolios/wealth.csv"
         )
     
     parser.add_argument(
         "--composition_filename",
-        help="File name to save the composition of the portfolios. Default: composition",
+        help="File name to save the composition of the portfolios. Default: ./data/portfolios/composition.csv",
         type=str,
-        default="composition"
+        default="./data/portfolios/composition.csv"
         )
-    
-    parser.add_argument(
-        "--plot_performance_filename",
-        help="File name for saving the plotted performance of the portfolios.",
-        type=str,
-        )
-    
-    parser.add_argument(
-        "--plot_composition_filename",
-        help="File name for saving the plotted composition of the portfolios.",
-        type=str,
-        )
+
+    parser.add_argument('--plot_results', action='store_true')
+    parser.add_argument('--dont_plot_results', dest='plot_results', action='store_false')
+    parser.set_defaults(dont_plot_results=False)
 
     args = parser.parse_args()
 
@@ -430,23 +390,16 @@ def main():
     if pathlib.PurePath(ROOT).name == 'src':
         raise Exception('Please run the script from the root directory.')
 
-    PATH_DATA = os.path.join(ROOT, args.data_path)
-    PATH_DATA_PRICES = os.path.join(PATH_DATA, args.prices_dirname)
-    PATH_DATA_PORTFOLIOS = os.path.join(PATH_DATA, args.save_dir)
+    PATH_DATA_PRICES = args.prices_dirname
+    PATH_DATA_PORTFOLIOS = os.path.dirname(args.performance_filename)
 
-    capitoltrades_fl = os.path.join(PATH_DATA, f'{args.capitoltrades_filename}.csv')
-    composition_fl = os.path.join(PATH_DATA_PORTFOLIOS, f'{args.composition_filename}.csv')
-    performance_fl = os.path.join(PATH_DATA_PORTFOLIOS, f'{args.performance_filename}.csv')
+    capitoltrades_fl = args.capitoltrades_filename
+    composition_fl = args.composition_filename
+    performance_fl = args.performance_filename
 
-    if args.plot_composition_filename is None:
-        composition_plot_fl = None
-    else:
-        composition_plot_fl = os.path.join(PATH_DATA_PORTFOLIOS, args.plot_composition_filename + '_{}.png')
-
-    if args.plot_performance_filename is None:
-        performance_plot_fl = None
-    else:
-        performance_plot_fl = os.path.join(PATH_DATA_PORTFOLIOS, f'{args.plot_performance_filename}.png')
+    assert os.path.splitext(capitoltrades_fl)[-1] == '.csv', 'capitoltrades_filename must be a .csv file!'
+    assert os.path.splitext(composition_fl)[-1] == '.csv', 'composition_filename must be a .csv file!'
+    assert os.path.splitext(performance_fl)[-1] == '.csv', 'performance_filename must be a .csv file!'
 
     try:
         os.makedirs(PATH_DATA_PORTFOLIOS)
@@ -514,10 +467,11 @@ def main():
 
     portfolio_wealth.to_csv(performance_fl, index=False)
 
-    print('# Plotting')
-    plot_portfolio_performance(portfolio_wealth, performance_plot_fl)
-    for date in portfolio_holdings.Date.unique():
-        long_short_portfolio_composition(portfolio_holdings, date, composition_plot_fl)
+    if args.plot_results:
+        print('# Plotting')
+        plot_portfolio_performance(portfolio_wealth, os.path.join(PATH_DATA_PORTFOLIOS, 'wealth.png'))
+        for date in portfolio_holdings.Date.unique():
+            long_short_portfolio_composition(portfolio_holdings, date, os.path.join(PATH_DATA_PORTFOLIOS, 'compositions_{}.png'))
         
 
 if __name__ == '__main__':
