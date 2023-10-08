@@ -148,6 +148,11 @@ We use the workflow manager `snakemake`, which handles the installation of the r
    ```bash
    conda create -c conda-forge -c bioconda -n snakemake snakemake
    ```
+3. Install [Firefox](https://www.mozilla.org/en-US/firefox/new/) if not already installed. Try:
+   ```bash
+   sh /path/to/InsideCapitolHill/src/bash_scripts/install_firefox.sh
+   ```
+   or follow online tutorials.
 
 ### Deployment
 
