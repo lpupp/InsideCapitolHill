@@ -115,13 +115,7 @@ To scrape the necessary data, run the following command:
 ```bash
 conda activate env_pp4rs
 
-python src/scrape_data.py \
---output_data_path 'data' \
---capitoltrades_filename 'CapitolTrades_raw' \
---ballotpedia_filename 'ballotpedia' \
---company_metadata_filename 'YahooFinance_industry' \
---prices_dirname 'yfinance_prices' \
---path_to_geckodriver '/path/to/geckodriver'
+python src/scrape_data.py --path_to_geckodriver '/path/to/geckodriver'
 ```
 
 ### Data output directory structure:
@@ -150,7 +144,7 @@ We use the workflow manager `snakemake`, which handles the installation of the r
    ```
 3. Install [Firefox](https://www.mozilla.org/en-US/firefox/new/) if not already installed. Try:
    ```bash
-   sh /path/to/InsideCapitolHill/src/bash_scripts/install_firefox.sh
+   sh src/bash_scripts/install_firefox.sh
    ```
    or follow online tutorials.
 
