@@ -29,7 +29,7 @@ const svg = d3.select("#plot")
 .attr("transform", `translate(${margin.left},${margin.top})`);
 
 // Get the data from the CSV
-d3.csv("../../data/portfolios/wealth.csv").then(data => {
+d3.csv("data/wealth.csv").then(data => {
     const totalDeposits = data[0].wealth;
     const currentWealth = data[data.length - 1].wealth;
 
@@ -95,7 +95,7 @@ d3.csv("../../data/portfolios/wealth.csv").then(data => {
 });
 
 
-d3.csv("../../data/portfolios/portfolio.csv").then(data => {
+d3.csv("data/portfolio.csv").then(data => {
     // Parse the date for comparison
     const parseDate = d3.timeParse('%Y-%m-%d');
     data.forEach(d => {
