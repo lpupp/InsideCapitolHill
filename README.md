@@ -149,16 +149,10 @@ We use the workflow manager `snakemake`, which handles the installation of the r
 
 ### Deployment
 
-For best results:
-
-1. Fork the Project: Ensure you have forked the project to have requisite permissions for push operations.
-2. Update User and Repo Information: Make sure to update the username in the snakefile to redirect the data to the intended location (change `your_user_name` and `forked_repo_name` below). 
-3. If you have the geckodriver pre-installed, replace `path/to/geckodriver` below. If not, kindly remove the relevant line.
+If you have the geckodriver pre-installed, replace `path/to/geckodriver` below. If not, kindly remove the relevant line.
 
 ```bash
-cd /path/to/InsideCapitolHill/fork
-sed -i 's|github_username_placeholder|your_user_name|g' Snakefile
-sed -i 's|repo_placeholder|forked_repo_name|g' Snakefile
+cd /path/to/InsideCapitolHill
 sed -i 's|../../drivers/geckodriver|path/to/geckodriver|g' Snakefile
 conda activate snakemake
 snakemake --cores 1 --use-conda --conda-frontend conda
@@ -166,4 +160,12 @@ snakemake --cores 1 --use-conda --conda-frontend conda
 
 ### Output 
 
-You can find a small cockpit  `https://$GITHUB_USERNAME.github.io/$REPO_NAME`. It should launch automatically after deployment.
+A cockpit to evaluate the current performance of your long-short portfolio built on the most recent data should load locally after completion. If not, run:
+```bash
+firefox .src/doc/index.html
+```
+
+There is a small unsolved bug that you are likely to encounter. Namely, since politicians have a 45-day grace period to report trades and since there may be weeks without new trades, it is likely that not every week has any open position. If there is not at least 1 long and 1 short position in the final week, the portfolio composition in the cockpit will not be displayed. This bug was not yet fixed. To see the output for a week where this bug is not encountered see [GitHub pages](https://lpupp.github.io/InsideCapitolHill) or run:
+```bash
+firefox https://lpupp.github.io/InsideCapitolHill
+```
