@@ -1,10 +1,8 @@
 rule outputs_all:
     input:
-        data_path = "data",
-        backtest_dir = "portfolios",
-        backtest_performance = "wealth",
-        backtest_composition = "composition",
-        webpage_timestamp = "src/doc/gh_publication_date_ddmmyy.txt"
+        backtest_performance = "./data/portfolios/wealth.csv",
+        backtest_composition = "./data/portfolios/composition.csv",
+        webpage_timestamp = "./src/doc/gh_publication_date_ddmmyy.txt"
 
 rule install_geckodriver:
     output:
@@ -12,27 +10,17 @@ rule install_geckodriver:
     shell:
         'sh src/bash_scripts/install_geckodriver.sh {output.driver_path}'
 
-rule install_firefox:
-    output:
-        firefox_installed = 'True'
-    shell:
-        'sh src/bash_scripts/install_firefox.sh'
-
 rule scrape_data:
     conda: "envs/env_pp4rs.yaml"
     input:
         driver_path = '../../drivers/geckodriver',
-        firefox_installed = 'True'
     output:
-        data_path = "data",
-        capitoltrades_filename = "CapitolTrades_raw",
-        prices_dirname = "yfinance_prices"
+        capitoltrades_filename = "./data/CapitolTrades_raw.csv",
     shell:
         '''
         python src/scrape_data.py \
-        --output_data_path {output.data_path} \
         --capitoltrades_filename {output.capitoltrades_filename} \
-        --prices_dirname {output.prices_dirname} \
+        --prices_dirname ./data/yfinance_prices \
         --path_to_geckodriver {input.driver_path} \
         --no-ballotpedia \
         --no-yahoofinance_meta \
@@ -42,48 +30,30 @@ rule scrape_data:
 rule backtest_portfolio:
     conda: "envs/env_pp4rs.yaml"
     input:
-        data_path = "data",
-        capitoltrades_filename = "CapitolTrades_raw",
-        prices_dirname = "yfinance_prices",
+        capitoltrades_filename = "./data/CapitolTrades_raw.csv",
     output:
-        backtest_dir = "portfolios",
-        backtest_performance = "wealth",
-        backtest_composition = "composition",
-        backtest_plot_performance = "wealth_plot",
-        backtest_plot_composition = "composition_plot"
+        backtest_performance = "./data/portfolios/wealth.csv",
+        backtest_composition = "./data/portfolios/composition.csv",
     shell:
         '''
-        python src/backtest_strategy.py \
-        --data_path {input.data_path} \
+        python src/backtest_longshort.py \
         --capitoltrades_filename {input.capitoltrades_filename} \
-        --prices_dirname {input.prices_dirname} \
-        --save_dir {output.backtest_dir} \
+        --prices_dirname ./data/yfinance_prices \
         --performance_filename {output.backtest_performance} \
-        --composition_filename {output.backtest_composition} \
-        --plot_performance_filename {output.backtest_plot_performance} \
-        --plot_composition_filename {output.backtest_plot_composition}
+        --composition_filename {output.backtest_composition}
         '''
 
 rule publish_gh_page:
     input: 
-        data_path = "data",
-        backtest_dir = "portfolios",
-        backtest_performance = "wealth",
-        backtest_composition = "composition"
+        backtest_performance = "./data/portfolios/wealth.csv",
+        backtest_composition = "./data/portfolios/composition.csv",
     output:
-        webpage_directory = "src/doc",
-        webpage_index = "index.html",
-        github_username = 'github_username_placeholder',
-        repo_fork_name = 'repo_placeholder',
-        webpage_timestamp = "src/doc/gh_publication_date_ddmmyy.txt"
+        webpage_index = "./src/doc/index.html",
+        webpage_timestamp = "./src/doc/gh_publication_date_ddmmyy.txt"
     shell:
         '''
-        sh src/bash_scripts/publish-to-gh-pages.sh \
-        {output.github_username} \
-        {output.repo_fork_name} \
-        {output.webpage_directory} \
-        {input.data_path} \
-        {input.backtest_dir} \
+        sh src/bash_scripts/publish-to-gh-pages.sh github_username repo_fork_name \
+        {output.webpage_index} \
         {input.backtest_performance} \
         {input.backtest_composition} \
         {output.webpage_timestamp}

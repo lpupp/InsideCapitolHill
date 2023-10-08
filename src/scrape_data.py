@@ -462,44 +462,38 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--output_data_path",
-        help="The path to the output file. Default: data",
-        type=str,
-        default="data"
-        )
-
-    parser.add_argument(
         "--capitoltrades_filename",
-        help="The path to the output file. Default: data",
+        help="The path to the output file. Default: ./data/CapitolTrades_raw.csv",
         type=str,
-        default="CapitolTrades_raw"
+        default="./data/CapitolTrades_raw.csv"
         )
 
     parser.add_argument(
         "--ballotpedia_filename",
-        help="The path to the output file. Default: data",
+        help="The path to the output file. Default: ./data/ballotpedia.yaml",
         type=str,
-        default="ballotpedia"
+        default="./data/ballotpedia.yaml"
         )
     
     parser.add_argument(
         "--company_metadata_filename",
-        help="The path to the output file. Default: data",
+        help="The path to the output file. Default: ./data/YahooFinance_industry.csv",
         type=str,
-        default="YahooFinance_industry"
+        default="./data/YahooFinance_industry.csv"
         )
 
     parser.add_argument(
         "--prices_dirname",
-        help="The path to the output file. Default: data",
+        help="The path to the output file. Default: ./data/yfinance_prices",
         type=str,
-        default="yfinance_prices"
+        default="./data/yfinance_prices"
         )
 
     parser.add_argument(
         "--path_to_geckodriver",
-        help="The path to the output file. Default: data",
+        help="The path to the output file.",
         type=str,
+        default='/home/lpupp/Documents/drivers/geckodriver'
         )
 
     parser.add_argument('--capitoltrades', action='store_true')
@@ -533,13 +527,16 @@ def main():
     if pathlib.PurePath(ROOT).name == 'src':
         raise Exception('Please run the script from the root directory.')
 
-    PATH_DATA = os.path.join(ROOT, args.output_data_path.strip('./'))
-    PATH_DATA_PRICES = os.path.join(PATH_DATA, args.prices_dirname)
+    PATH_DATA_PRICES = os.path.join(args.prices_dirname)
 
     # File names
-    capitoltrades_fl = os.path.join(PATH_DATA, f'{args.capitoltrades_filename}.csv')
-    ballotpredia_fl = os.path.join(PATH_DATA, f'{args.ballotpedia_filename}.yaml')
-    company_metadata_fl = os.path.join(PATH_DATA, f'{args.company_metadata_filename}.csv')
+    capitoltrades_fl = args.capitoltrades_filename
+    ballotpredia_fl = args.ballotpedia_filename
+    company_metadata_fl = args.company_metadata_filename
+
+    assert os.path.splitext(capitoltrades_fl)[-1] == '.csv', 'capitoltrades_filename must be a .csv file!'
+    assert os.path.splitext(ballotpredia_fl)[-1] in ['.yaml', '.yml'], 'ballotpedia_filename must be a .yaml file!'
+    assert os.path.splitext(company_metadata_fl)[-1] == '.csv', 'company_metadata_filename must be a .csv file!'
 
     try:
         os.makedirs(PATH_DATA_PRICES)
