@@ -106,7 +106,7 @@ To install Firefox (for Mac (with homebrew installed) and Linux OS):
 sh src/install_firefox.sh
 ```
 
-If this does not work. Please follow standard `geckodriver` installation online tools. Alternatively, a Chrome driver can be installed, however, small changes to [src/scrape_data.py](src/scrape_data.py) would have to be made.
+If this does not work. Please follow standard online `geckodriver` installation resources. Alternatively, a Chrome driver can be installed, however, small changes to [src/scrape_data.py](src/scrape_data.py) would have to be made.
 
 ## Data scraping
 
