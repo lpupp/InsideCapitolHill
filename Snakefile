@@ -43,7 +43,7 @@ rule backtest_portfolio:
         --composition_filename {output.backtest_composition}
         '''
 
-rule publish_gh_page:
+rule launch_cockpit:
     input: 
         backtest_performance = "./data/portfolios/wealth.csv",
         backtest_composition = "./data/portfolios/composition.csv",
@@ -52,9 +52,7 @@ rule publish_gh_page:
         webpage_timestamp = "./src/doc/gh_publication_date_ddmmyy.txt"
     shell:
         '''
-        sh src/bash_scripts/publish-to-gh-pages.sh github_username repo_fork_name \
+        sh src/bash_scripts/launch_cockpit.sh \
         {output.webpage_index} \
-        {input.backtest_performance} \
-        {input.backtest_composition} \
         {output.webpage_timestamp}
         '''
