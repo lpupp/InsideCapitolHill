@@ -47,8 +47,8 @@ rule publish_gh_page:
     input: 
         backtest_performance = "./data/portfolios/wealth.csv",
         backtest_composition = "./data/portfolios/composition.csv",
-    output:
         webpage_index = "./src/doc/index.html",
+    output:
         webpage_timestamp = "./src/doc/gh_publication_date_ddmmyy.txt"
     shell:
         '''
