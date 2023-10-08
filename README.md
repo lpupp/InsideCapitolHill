@@ -29,7 +29,7 @@ Further details in the [scraping script](src/scrape_data.py).
 
 ## Dependencies and setup
 
-Before running the project, ensure you have installed the dependencies by either cloning the environment ([founf here](envs/env_pp4rs.yaml)) or installing them manually. To clone environment, run:
+Before running the project, ensure you have installed the dependencies by either cloning the environment ([found here](envs/env_pp4rs.yaml)) or installing them manually. To clone environment, run:
 ```bash
 conda env create -f envs/env_pp4rs.yaml
 ```
