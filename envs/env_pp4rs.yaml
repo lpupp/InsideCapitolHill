@@ -11,7 +11,7 @@ dependencies:
   - sentence-transformers=2.2.2 
   - pip
   - pip:
-    - yfinance=0.2.31 
-    - selenium=4.11.2
-    - tqdm=4.66.1
-    - pandas-datareader=0.10.0
+    - yfinance==0.2.31 
+    - selenium==4.11.2
+    - tqdm==4.66.1
+    - pandas-datareader==0.10.0
